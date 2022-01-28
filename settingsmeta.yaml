@@ -1,22 +1,22 @@
 
 skillMetadata:
   sections:
-    - name: Options << Name of section
+    - name:  Database Settimgs
       fields:
-        - name: internal_python_variable_name
+        - name: db_path
           type: text
-          label: Setting Friendly Display Name
+          label: Path to database starting from mycroft-core
           value: ""
-          placeholder: demo prompt in the input box
-    - name: Login << Name of another section
-      fields:
-        - type: label
-          label: Just a little bit of extra info for the user to understand following settings
-        - name: username
+          placeholder: ../databases/
+        - name: db_filename_01
           type: text
-          label: Username
+          label: Database file name
+          label: File name 01
           value: ""
-        - name: password
-          type: password
-          label: Password
+          placeholder: tools.db
+        - name: db_filename_02
+          type: text
+          label: Database file name
+          label: File name 02
           value: ""
+          placeholder: example_02.db

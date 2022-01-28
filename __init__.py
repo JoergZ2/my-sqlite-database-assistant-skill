@@ -1,14 +1,255 @@
-from mycroft import MycroftSkill, intent_file_handler
-
+from mycroft import MycroftSkill, intent_handler
+from mycroft.util.log import getLogger
+from mycroft.util import extract_number
+from mycroft.api import DeviceApi
+import sys
+import os
+from pathlib import Path
+import time
+import sqlite3 as sq
+LOGGER = getLogger(__name__)
+#test
 
 class MySqliteDatabaseAssistant(MycroftSkill):
     def __init__(self):
-        MycroftSkill.__init__(self)
+        super(MySqliteDatabaseAssistant, self).__init__(name="My SQLite Database Assistant")
 
-    @intent_file_handler('assistant.database.sqlite.my.intent')
-    def handle_assistant_database_sqlite_my(self, message):
-        self.speak_dialog('assistant.database.sqlite.my')
+    def initialize(self):
+        self.settings_change_callback = self.on_settings_changed
+        self.on_settings_changed()
+        self.same_device = DeviceApi()
+        self.info = self.same_device.get(); self.same_device = self.info['description'].lower()
+        #self.con = sq.connect(self.db_adr, check_same_thread=False)
+        #self.cursor = self.con.cursor()
 
+
+    def on_settings_changed(self):
+        self.db_path = self.settings.get('db_path')
+        self.db_file_01 = self.settings.get('db_filename_01')
+        self.db_file_02 = self.settings.get('db_filename_02')
+        self.db_adr = self.db_path  + self.db_file_01
+    
+    def db_file_check(self, db_path):
+        LOGGER.info(db_path)
+        db_file = Path(db_path)
+        return db_file.is_file()
+
+## Make db execution       
+    def execution(self,db_adre,sql):
+        with sq.connect(self.db_adr, check_same_thread=False) as conn:
+            cur = conn.cursor()
+            cur.execute(sql)
+            return cur.fetchall()
+
+
+##Database functions
+#create if not exists
+    def db_creation(self, db_location = '../databases/', db_name = 'tools.db', table_name = 'tool'):
+        db_adre = db_location + db_name
+        sql = """CREATE TABLE '""" + table_name + """' (key INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \
+            t_name TEXT, t_synonym TEXT, t_storage TEXT, t_place TEXT);
+            """
+        if self.db_file_check(db_adre) == False:
+            con = sq.connect(db_adre, check_same_thread=False)
+            con.commit()
+        else:
+            self.speak_dialog('database.exists',{'database': db_name})
+            return None
+        if not os.path.exists(db_location):
+            os.makedirs(db_location)
+        cursor = con.cursor()
+        cursor.execute(sql)
+        con.commit()
+        if self.db_file_check(db_adre) == True:
+            self.speak_dialog('dbcreation.successful', {'database': db_name})
+        else:
+            self.speak_dialog('dbcreation.no.success', {'database': db_name})
+
+
+# Simple requests    
+    def check_tool_names_exact(self, tool):
+        """Checks with exact name if a tool exists and returns the ID"""
+        sql = """
+        SELECT t_name, t_synonym, t_storage, t_place, key FROM tool WHERE t_name LIKE '"""+ tool +"""';
+        """
+        if self.db_file_check(self.db_adr) == True:
+            res = self.execution(self.db_adr, sql)
+            #res = self.cursor.fetchall()
+            return res
+        else:
+            self.speak_dialog('no_database',{'database': self.db_file_01})
+
+    def check_tool_names_raw(self, tool):
+        """Checks with a part of name if a tool exists and returns the t_name"""
+        sql = """
+        SELECT t_name, t_synonym, t_storage, t_place FROM tool WHERE t_name LIKE '"""+ '%' +tool + '%'+"""';
+        """
+        if self.db_file_check(self.db_adr) == True:
+            res = self.execution(self.db_adr, sql)
+            #res = self.cursor.fetchall()
+            return res
+        else:
+            self.speak_dialog('no_database',{'database': self.db_file_01})
+    
+
+    def check_tool_synonyms(self, tool):
+        """Checks if a tool exists and returns the t_name"""
+        sql = """
+        SELECT t_name, t_synonym, t_storage, t_place FROM tool WHERE t_synonym LIKE '"""+ '%' +tool + '%'+"""';
+        """
+        if self.db_file_check(self.db_adr) == True:
+            res = self.execution(self.db_adr, sql)
+            #res = self.cursor.fetchall()
+            return res
+        else:
+            self.speak_dialog('no_database',{'database': self.db_file_01})
+    
+    def insert_new_tool(self, tool, synonym, storage, place):
+        """inserts a new tool if not exists"""
+        stored_tool = self.check_tool_names_exact(tool)
+        sql = """
+            INSERT INTO tool (key, t_name, t_synonym, t_storage, t_place) VALUES \
+                (NULL, '""" + tool +"""', '""" + synonym +"""', '""" + storage +"""',\
+                 '""" + place +"""');
+            """
+        if self.db_file_check(self.db_adr) == True:
+            res = self.execution(self.db_adr, sql)
+        else:
+            self.speak_dialog('no_database',{'database': self.db_file_01})
+        
+    def update_tool(self, key_tool, new_storage, new_place):
+        """updates storage and place of a known tool"""
+        sql = """
+        UPDATE tool SET t_storage = '""" + new_storage + """', t_place = '""" + new_place + """' \
+            WHERE key = '""" + str(key_tool) + """';
+            """
+        self.execution(self.db_adr, sql)
+
+
+    def change_storage(self, tool):
+        """Changes a storage or place of a tool"""
+        selection_list = []
+        counter = 0
+        res = self.check_tool_names_exact(tool)
+        if len(res) > 0:
+            selected_tools = [i for i in range(len(res))]
+            for i in selected_tools:
+                selection_list = selection_list + [str(res[i][0]) + ' in ' + str(res[i][2]) + ', ' + str(res[i][3])]
+            for i in selection_list:
+                counter = counter + 1
+                self.speak_dialog('speak.selection.list',{'counter': counter, 'i': i})
+            nr_from_sel_list = self.get_response('speak.selection')
+            if nr_from_sel_list == None:
+                return
+            nr_from_sel_list = extract_number(nr_from_sel_list); nr_from_sel_list -= 1;nr_from_sel_list = int(nr_from_sel_list)
+            #LOGGER.info("Key Nr: " + str(res[nr_from_sel_list]))
+            key_tool = res[nr_from_sel_list][4]
+            new_storage = self.get_response('new.storage')
+            new_place = self.get_response('new.place')
+            try:
+                self.update_tool(key_tool,new_storage, new_place)
+                self.speak_dialog('update.success')
+            except sq.OperationalError as e:
+                self.speak_dialog('database.error')
+                return
+        
+
+## Helper functions
+# file exist
+    def db_file_check(self, db_path):
+        """Checks if db file exists"""
+        LOGGER.info(db_path)
+        db_file = Path(db_path)
+        return db_file.is_file()
+
+# db infos
+    def count_db_rows(self):
+        sql = """SELECT COUNT() FROM tool;"""
+        res = self.execution(self.db_adr, sql)
+        return res
+
+#Formatting data tuples to speech
+    def make_utterance(self, res, tool):
+        """Makes an utterance if tool is found in column t_name"""
+        if len(res) == 0:
+            self.speak_dialog('notool', {'tool': tool})
+        else:
+            i = 0
+            while i < len(res):
+                tool = res[i][0]
+                storage = res[i][2]
+                place = res[i][3]
+                self.speak_dialog('tool.is.in', {'tool': tool, 'storage': storage, 'place': place})
+                i += 1
+
+    def make_utterance_from_synonym(self, res, tool):
+        """Makes an utterance if tool is found in column t_synonym and speaks the primary name from t_name"""
+        if len(res) == 0:
+            self.speak_dialog('notool', {'tool': tool})
+        else:
+            i = 0
+            while i < len(res):
+                tool = res[i][0]
+                synonym = res[i][1]
+                storage = res[i][2]
+                place = res[i][3]
+                self.speak_dialog('synonym.is.in', {'tool': tool, 'synonym': synonym, 'storage': storage, 'place': place})
+                time.sleep(1)
+                i += 1
+
+
+##Intent handlers
+    @intent_handler('create.database.intent')
+    def handle_create_database(self):
+        self.db_creation()
+
+    @intent_handler('insert.tool.intent')
+    def handle_insert_tool(self):
+        res = self.count_db_rows()
+        res_rows_old = int(res[0][0])
+        tool = self.get_response('insert.tool.name',0)
+        synonym = self.get_response('insert.tool.synonym',0)
+        if synonym == None:
+            synonym = " "
+        storage = self.get_response('insert.tool.storage',0)
+        place = self.get_response('insert.tool.place',0)
+        self.insert_new_tool(tool, synonym, storage, place)
+        res = self.count_db_rows()
+        res_rows_new = int(res[0][0])
+        if res_rows_new - res_rows_old == 1:
+            self.speak_dialog('tool.stored.success', {'tool': tool})
+
+
+    @intent_handler('find.tool.intent')
+    def handle_find_tool(self, message):
+        '''Looks for a tool in column t_name. If search isn't successful\
+            you are asked for looking in column t_synonym'''
+        tool = message.data.get('tool')
+        if self.db_file_check(self.db_adr) == True:
+            res = self.check_tool_names_exact(tool)
+            if len(res) == 0:
+                answer = self.ask_yesno('look.for.synonym', {'tool': tool})
+                if answer == 'yes':
+                    res = self.check_tool_synonyms(tool)
+                    if len(res) == 0:
+                        self.speak_dialog('nosynonym', {'tool': tool})
+                    else:
+                        self.make_utterance_from_synonym(res, tool)
+                else:
+                    self.speak_dialog('no.tool.name')
+                    return
+            else:
+                self.make_utterance(res, tool)
+        else:
+            self.speak_dialog('no_database',{'database': self.db_file_01})
+
+    @intent_handler('change.storage.intent')
+    def handle_change_storage(self, message):
+        tool = message.data.get('tool')
+        if self.db_file_check(self.db_adr) == True:
+            self.change_storage(tool)
+        else:
+            pass
 
 def create_skill():
     return MySqliteDatabaseAssistant()
