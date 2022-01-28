@@ -152,7 +152,7 @@ Voreinstellung: tools.db
 Beispiel für Picroft: Wenn eine Standardinstallation von Picroft verwendet wird, ist das Arbeitsverzeichnis für die Skills /home/pi/mycroft-core. Wenn ich in der Skill-Konfiguration als Pfad "../databases/" angebe, dann muss das Verzeichnis /home/pi/databases vorhanden sein.
 
 ### Intents
-**Erstellen Sie die Datenbank in ~./databases (Das Verzeichnis muss bereits existieren)**
+**Erstellen Sie die Datenbank in ~./databases (Das Verzeichnis sollte bereits existieren)**
 
 create.database.intent
 
