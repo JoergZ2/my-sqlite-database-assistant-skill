@@ -53,25 +53,41 @@ Default: tools.db
 Example for Picroft: If a default installation of Picroft is used, the working directory for the skills is /home/pi/mycroft-core. If I specify "../databases/" as the path in the skills configuration, then there must be the directory /home/pi/databases.
 
 ### Intents
-**Create the database in ~./databases (The directory must already exist)**
+**Create the database in ~./databases (The directory should already exist)**
+
 create.database.intent
+
 create tool database!
 
+
 **Recording of a new entry**
+
 insert.tool.intent
+
 (addition | record | register) tool
+
 new tool (record | create | register)
 
+
 **search for a tool (entry)**
+
 find.tool.intent
+
 search tool {tool}
+
 where is tool {tool}
+
 where is the tool {tool}
 
+
 **change storage location**
+
 change.storage.intent
+
 change tool {tool}!
+
 put tool {tool} somewhere else!
+
 
 ## Credits
 JoergZ2
@@ -135,22 +151,36 @@ Voreinstellung: tools.db
 
 Beispiel für Picroft: Wenn eine Standardinstallation von Picroft verwendet wird, ist das Arbeitsverzeichnis für die Skills /home/pi/mycroft-core. Wenn ich in der Skill-Konfiguration als Pfad "../databases/" angebe, dann muss das Verzeichnis /home/pi/databases vorhanden sein.
 
-### Absichten
+### Intents
 **Erstellen Sie die Datenbank in ~./databases (Das Verzeichnis muss bereits existieren)**
+
 create.database.intent
+
 erzeuge werkzeug datenbank
 
+
 **Eintragung eines neuen Eintrags**
+
 insert.tool.intent
+
 (ergänzung | erfassung | erfasse) werkzeug
+
 neues werkzeug (erfassen | anlegen | registrieren)
 
+
 **Suchen nach einem Werkzeug (Eintrag)**
+
 find.tool.intent
+
 suche werkzeug {tool}
+
 wo (liegt | ist) das werkzeug {tool}
 
+
 **Speicherort ändern**
+
 change.storage.intent
+
 verändere werkzeug {tool}!
+
 lege werkzeug {tool} woanders hin!
