@@ -28,6 +28,7 @@ class MySqliteDatabaseAssistant(MycroftSkill):
         self.db_file_01 = self.settings.get('db_filename_01')
         self.db_file_02 = self.settings.get('db_filename_02')
         self.db_adr = self.db_path  + self.db_file_01
+        LOGGER.info("Database: " + self.db_adr)
     
     def db_file_check(self, db_path):
         LOGGER.info(db_path)
@@ -46,6 +47,8 @@ class MySqliteDatabaseAssistant(MycroftSkill):
 #create if not exists
     def db_creation(self, db_location = '../databases/', db_name = 'tools.db', table_name = 'tool'):
         db_adre = db_location + db_name
+        if not os.path.exists(db_location):
+            os.makedirs(db_location)
         sql = """CREATE TABLE '""" + table_name + """' (key INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \
             t_name TEXT, t_synonym TEXT, t_storage TEXT, t_place TEXT);
             """
@@ -55,8 +58,6 @@ class MySqliteDatabaseAssistant(MycroftSkill):
         else:
             self.speak_dialog('database.exists',{'database': db_name})
             return None
-        if not os.path.exists(db_location):
-            os.makedirs(db_location)
         cursor = con.cursor()
         cursor.execute(sql)
         con.commit()
@@ -253,4 +254,3 @@ class MySqliteDatabaseAssistant(MycroftSkill):
 
 def create_skill():
     return MySqliteDatabaseAssistant()
-
