@@ -126,18 +126,16 @@ class MySqliteDatabaseAssistant(MycroftSkill):
             """
         self.execution(self.db_adr, sql)
     
-    def erase_one(self, key_tool):
-        key_tool = str(key_tool)
+    def erase_one(key_tool):
         sql = """
-        DELETE FROM tool WHERE key = '""" + key_tool + """';
+        DELETE FROM '""" + self.db_adr + """' WHERE key = '""" + key_tool + """';
         """
-        self.execution(self.db_adr, sql)
+        self.execute(self.db_adr, sql)
 
     def erase_all(self, selected_tools):
-        LOGGER.info(selected_tools)
         for i in range(len(selected_tools)):
             sql = """
-            DELETE FROM tool WHERE key = '""" + str(selected_tools[i][4]) + """';
+            DELETE FROM '""" + self.db_adr + """' WHERE key = '""" + selection_list[i][4] + """';
             """
             self.execution(self.db_adr, sql)
 
@@ -180,20 +178,22 @@ class MySqliteDatabaseAssistant(MycroftSkill):
                 selection_list = selection_list + [str(res[i][0]) + ' in ' + str(res[i][2]) + ', ' + str(res[i][3])]
             for i in selection_list:
                 counter = counter + 1
-                self.speak_dialog('speak.erase.list',{'counter': counter, 'i': i})
-            nr_from_sel_list = self.get_response('speak.erase')
+                self.speak_dialog('speak.erase',{'counter': counter, 'i': i})
+            nr_from_sel_list = self.get_response('speak.erase.list')
+            nr_from_sel_list = extract_number(nr_from_sel_list); nr_from_sel_list -= 1;nr_from_sel_list = int(nr_from_sel_list)
+            #LOGGER.info("Key Nr: " + str(res[nr_from_sel_list]))
             if nr_from_sel_list == None:
                 return
             if self.voc_match(nr_from_sel_list, 'all'):
                 try:
-                    self.erase_all(res)
+                    self.erase_all(selected_tools)
                     self.speak_dialog('erase.all.success', {'tool': tool})
                 except sq.OperationalError as e:
                     self.speak_dialog('database.error')
                     return
             else:
-                nr_from_sel_list = extract_number(nr_from_sel_list); nr_from_sel_list -= 1;nr_from_sel_list = int(nr_from_sel_list)
                 try:
+                    LOGGER.info(str(nr_from_sel_list[4]))
                     key_tool = res[nr_from_sel_list][4]
                     self.erase_one(key_tool)
                     self.speak_dialog('erase.one.success', {'tool': tool})
