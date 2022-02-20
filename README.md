@@ -2,7 +2,7 @@
 Mycroft Skill for adding records to a database using sqlite
 
 ## About
-My-sqlite-database-assistant-skill (MSDAS) was born out of the need not to constantly search for a tool in my small and hopelessly overcrowded workshop. This resulted in the table name and the data field labels t_name, t_synonym, etc. In my workshop is a Raspberry Pi 3A with Respeaker 4-mic array.
+My-sqlite-database-assistant-skill (MSDAS) for Mycroft.ai was born out of the need not to constantly search for a tool in my small and hopelessly overcrowded workshop. This resulted in the table name and the data field labels t_name, t_synonym, etc. In my workshop is a Raspberry Pi 3A with Respeaker 4-mic array.
 
 Meanwhile, I use MSDAS as a general tool for retrieving things.
 
