@@ -2,10 +2,8 @@ from mycroft import MycroftSkill, intent_handler
 from mycroft.util.log import getLogger
 from mycroft.util import extract_number
 from mycroft.api import DeviceApi
-import sys
-import os
+import sys, os, time
 from pathlib import Path
-import time
 import sqlite3 as sq
 LOGGER = getLogger(__name__)
 #test
@@ -257,9 +255,13 @@ class MySqliteDatabaseAssistant(MycroftSkill):
         res = self.count_db_rows()
         res_rows_old = int(res[0][0])
         tool = self.get_response('insert.tool.name',0)
-        synonym = self.get_response('insert.tool.synonym',0)
-        if synonym == None:
-            synonym = " "
+        answer = self.ask_yesno('insert.synonym', {'tool': tool})
+        if answer == 'yes':
+            synonym = self.get_response('insert.tool.synonym',0)
+            if synonym == None:
+                synonym = " "
+        else:
+            synonym  = " "
         storage = self.get_response('insert.tool.storage',0)
         place = self.get_response('insert.tool.place',0)
         self.insert_new_tool(tool, synonym, storage, place)
