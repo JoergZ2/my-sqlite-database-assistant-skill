@@ -26,10 +26,10 @@ class MySqliteDatabaseAssistant(MycroftSkill):
         self.db_file_01 = self.settings.get('db_filename_01')
         self.db_file_02 = self.settings.get('db_filename_02')
         self.db_adr = self.db_path  + self.db_file_01
-        LOGGER.info("Database: " + self.db_adr)
+        #LOGGER.info("Database: " + self.db_adr)
     
     def db_file_check(self, db_path):
-        LOGGER.info(db_path)
+        #LOGGER.info(db_path)
         db_file = Path(db_path)
         return db_file.is_file()
 
@@ -132,7 +132,7 @@ class MySqliteDatabaseAssistant(MycroftSkill):
         self.execution(self.db_adr, sql)
 
     def erase_all(self, selected_tools):
-        LOGGER.info(selected_tools)
+        #LOGGER.info(selected_tools)
         for i in range(len(selected_tools)):
             sql = """
             DELETE FROM tool WHERE key = '""" + str(selected_tools[i][4]) + """';
@@ -205,7 +205,7 @@ class MySqliteDatabaseAssistant(MycroftSkill):
 # file exist
     def db_file_check(self, db_path):
         """Checks if db file exists"""
-        LOGGER.info(db_path)
+        #LOGGER.info(db_path)
         db_file = Path(db_path)
         return db_file.is_file()
 
@@ -244,7 +244,6 @@ class MySqliteDatabaseAssistant(MycroftSkill):
                 time.sleep(1)
                 i += 1
 
-
 ##Intent handlers
     @intent_handler('create.database.intent')
     def handle_create_database(self):
@@ -270,7 +269,6 @@ class MySqliteDatabaseAssistant(MycroftSkill):
         if res_rows_new - res_rows_old == 1:
             self.speak_dialog('tool.stored.success', {'tool': tool})
 
-
     @intent_handler('find.tool.intent')
     def handle_find_tool(self, message):
         '''Looks for a tool in column t_name. If search isn't successful\
@@ -279,16 +277,21 @@ class MySqliteDatabaseAssistant(MycroftSkill):
         if self.db_file_check(self.db_adr) == True:
             res = self.check_tool_names_exact(tool)
             if len(res) == 0:
-                answer = self.ask_yesno('look.for.synonym', {'tool': tool})
-                if answer == 'yes':
-                    res = self.check_tool_synonyms(tool)
-                    if len(res) == 0:
-                        self.speak_dialog('nosynonym', {'tool': tool})
+                tool = tool.replace('-', ' ')
+                res = self.check_tool_names_exact(tool)
+                if len(res) == 0:
+                    answer = self.ask_yesno('look.for.synonym', {'tool': tool})
+                    if answer == 'yes':
+                        res = self.check_tool_synonyms(tool)
+                        if len(res) == 0:
+                            self.speak_dialog('nosynonym', {'tool': tool})
+                        else:
+                            self.make_utterance_from_synonym(res, tool)
                     else:
-                        self.make_utterance_from_synonym(res, tool)
+                        self.speak_dialog('no.tool.name')
+                        return
                 else:
-                    self.speak_dialog('no.tool.name')
-                    return
+                    self.make_utterance(res, tool)
             else:
                 self.make_utterance(res, tool)
         else:
